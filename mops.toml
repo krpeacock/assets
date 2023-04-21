@@ -1,3 +1,9 @@
+[package]
+name = "assets"
+version = "0.1.0"
+description = "Asset canister functionality for your canister"
+repository = "https://github.com/krpeacock/assets"
+
 [dependencies]
 base = "0.8.7"
 test = "1.0.1"

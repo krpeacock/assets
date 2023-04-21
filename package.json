@@ -1,7 +1,7 @@
 {
-    "name": "package",
+    "name": "@krpeacock/assets",
     "version": "0.1.0",
-    "description": "",
+    "description": "Asset canister logic for motoko canisters",
     "main": "index.js",
     "scripts": {
         "test": "mo-test",
