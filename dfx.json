@@ -1,0 +1,13 @@
+{
+  "canisters": {
+    "test": {
+      "type": "motoko",
+      "main": "test/e2e/test.mo"
+    }
+  },
+  "defaults": {
+    "build": {
+      "packtool": "npm run --silent sources"
+    }
+  }
+}
