@@ -1,11 +1,16 @@
-# Motoko Library Template
+# Motoko Assets Library
 
-This is a template for a Motoko library. It contains a simple library, a unit test and e2e test suite. 
+This library provides your canister with the logic required to manage assets according to the asset canister interface used by `dfx` and `@dfinity/assets`.
 
 This library is set up to be used with [mops](https://mops.one). Be sure to edit `mops.toml`, `dfx.json`, and `package.json` to match your project as needed.
 
 ## Usage
 
+The process to set up your canister is fairly involved. Start copying all the logic in the `test/e2e/test.mo` interface. You will need to import `assets` from 
+
+```
+mops add assets
+```
 
 ## Testing
 

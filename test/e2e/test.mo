@@ -33,8 +33,6 @@ shared ({ caller = creator }) actor class () {
       caller;
       other;
     });
-    Debug.print("authorized" # debug_show other);
-    ();
   };
 
   public query func retrieve(path : Assets.Path) : async Assets.Contents {
