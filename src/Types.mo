@@ -8,90 +8,88 @@ module Types {
   public type Time = Int;
 
   public type AssetEncodingDetails = {
-    modified: Time;
-    content_encoding: Text;
-    sha256: ?Blob;
-    length: Nat;
+    modified : Time;
+    content_encoding : Text;
+    sha256 : ?Blob;
+    length : Nat;
   };
 
   public type AssetDetails = {
-    key: Key;
-    content_type: Text;
-    encodings: [AssetEncodingDetails];
+    key : Key;
+    content_type : Text;
+    encodings : [AssetEncodingDetails];
   };
 
   public type CreateAssetArguments = {
-    key: Key;
-    content_type: Text;
+    key : Key;
+    content_type : Text;
   };
 
   public type SetAssetContentArguments = {
-    key: Key;
-    content_encoding: Text;
-    chunk_ids: [ChunkId];
-    sha256: ?Blob;
+    key : Key;
+    content_encoding : Text;
+    chunk_ids : [ChunkId];
+    sha256 : ?Blob;
   };
 
   public type UnsetAssetContentArguments = {
-    key: Key;
-    content_encoding: Text;
+    key : Key;
+    content_encoding : Text;
   };
 
   public type DeleteAssetArguments = {
-    key: Key;
+    key : Key;
   };
 
-  public type ClearArguments = {
-  };
+  public type ClearArguments = {};
 
   public type BatchOperationKind = {
-    #CreateAsset: CreateAssetArguments;
-    #SetAssetContent: SetAssetContentArguments;
-    #UnsetAssetContent: UnsetAssetContentArguments;
+    #CreateAsset : CreateAssetArguments;
+    #SetAssetContent : SetAssetContentArguments;
+    #UnsetAssetContent : UnsetAssetContentArguments;
 
-    #DeleteAsset: DeleteAssetArguments;
+    #DeleteAsset : DeleteAssetArguments;
 
-    #Clear: ClearArguments;
+    #Clear : ClearArguments;
   };
 
   public type CommitBatchArguments = {
-    batch_id: BatchId;
-    operations: [BatchOperationKind];
+    batch_id : BatchId;
+    operations : [BatchOperationKind];
   };
 
   public type HeaderField = (Text, Text);
 
   public type HttpRequest = {
-    method: Text;
-    url: Text;
-    headers: [HeaderField];
-    body: Blob;
+    method : Text;
+    url : Text;
+    headers : [HeaderField];
+    body : Blob;
   };
 
   public type StreamingStrategy = {
-    #Callback: {
-      callback: shared query StreamingCallbackToken -> async 
-StreamingCallbackHttpResponse;
-      token: StreamingCallbackToken;
+    #Callback : {
+      callback :  StreamingCallbackToken ->  StreamingCallbackHttpResponse;
+      token : StreamingCallbackToken;
     };
   };
   public type HttpResponse = {
-    status_code: Nat16;
-    headers: [HeaderField];
-    body: Blob;
+    status_code : Nat16;
+    headers : [HeaderField];
+    body : Blob;
 
-    streaming_strategy: ?StreamingStrategy;
+    streaming_strategy : ?StreamingStrategy;
   };
 
   public type StreamingCallbackToken = {
-      key: Text;
-      content_encoding: Text;
-      index: Nat;
-      sha256: ?Blob;
+    key : Text;
+    content_encoding : Text;
+    index : Nat;
+    sha256 : ?Blob;
   };
 
   public type StreamingCallbackHttpResponse = {
-    body: Blob;
-    token: ?StreamingCallbackToken;
+    body : Blob;
+    token : ?StreamingCallbackToken;
   };
 };

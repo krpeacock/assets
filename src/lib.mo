@@ -26,43 +26,48 @@ module {
   public type Asset = A.Asset;
   public type AssetEncoding = A.AssetEncoding;
   public type StableAsset = A.StableAsset;
+  public type Path = T.Path;
+  public type Contents = T.Contents;
 
-  public func example (): () {};
+  public func example() : () {};
 
   public type AssetsInit = {
     authorized : [Principal];
-     stableAssets : [(T.Key, A.StableAsset)];
-     setAuthorized : [Principal] -> ();
-     setStableAssets : [(T.Key, A.StableAsset)] -> ();
+    stableAssets : [(T.Key, A.StableAsset)];
+    setAuthorized : [Principal] -> ();
+    setStableAssets : [(T.Key, A.StableAsset)] -> ();
   };
 
   public class Assets(assetsInit : AssetsInit) {
     let { authorized; stableAssets; setAuthorized; setStableAssets } = assetsInit;
 
-    let assets = HashMap.fromIter<T.Key, A.Asset>(Iter.map(stableAssets.vals(), A.toAssetEntry), 7, Text.equal, Text.hash);
+    public let assets = HashMap.fromIter<T.Key, A.Asset>(Iter.map(stableAssets.vals(), A.toAssetEntry), 7, Text.equal, Text.hash);
 
     let chunks = C.Chunks();
     let batches = B.Batches();
 
-    public shared ({ caller }) func authorize(other : Principal) : async () {
+    public func authorize({
+      caller : Principal;
+      other : Principal;
+    }) : () {
       if (isSafe(caller)) {
         setAuthorized(Array.append<Principal>(authorized, [other]));
       } else {
-        throw Error.reject("not authorized");
+        Debug.trap("not authorized");
       };
     };
 
     // Retrieve an asset's contents by name.
     // Rejects requests for assets composed of more than one chunk.
     // To handle larger assets, use get() and get_chunk().
-    public query func retrieve(path : T.Path) : async T.Contents {
+    public func retrieve(path : T.Path) : T.Contents {
       switch (assets.get(path)) {
-        case null throw Error.reject("not found");
+        case null Debug.trap("not found");
         case (?asset) {
           switch (asset.getEncoding("identity")) {
-            case null throw Error.reject("no identity encoding");
+            case null Debug.trap("no identity encoding");
             case (?encoding) {
-              if (encoding.content.size() > 1) throw Error.reject("Asset too large.  Use get() and get_chunk() instead.");
+              if (encoding.content.size() > 1) Debug.trap("Asset too large.  Use get() and get_chunk() instead.");
               encoding.content[0];
             };
           };
@@ -73,17 +78,18 @@ module {
     // Store a content encoding for an asset.  Does not remove other content encodings.
     // If the contents exceed the message ingress limit,
     // use create_batch(), create_chunk(), commit_batch() instead.
-    public shared ({ caller }) func store(
+    public func store({
+      caller : Principal;
       arg : {
         key : T.Key;
         content_type : Text;
         content_encoding : Text;
         content : Blob;
         sha256 : ?Blob;
-      }
-    ) : async () {
+      };
+    }) : () {
       if (isSafe(caller) == false) {
-        throw Error.reject("not authorized");
+        Debug.trap("not authorized");
       };
 
       let batch = batches.create();
@@ -95,7 +101,7 @@ module {
       };
       switch (createAsset(create_asset_args)) {
         case (#ok(())) {};
-        case (#err(msg)) throw Error.reject(msg);
+        case (#err(msg)) Debug.trap(msg);
       };
 
       let args : T.SetAssetContentArguments = {
@@ -106,7 +112,7 @@ module {
       };
       switch (setAssetContent(args)) {
         case (#ok(())) {};
-        case (#err(msg)) throw Error.reject(msg);
+        case (#err(msg)) Debug.trap(msg);
       };
     };
 
@@ -134,7 +140,7 @@ module {
       };
     };
 
-    public query func list(arg : {}) : async [T.AssetDetails] {
+    public func list(arg : {}) : [T.AssetDetails] {
       let iter = Iter.map<(Text, A.Asset), T.AssetDetails>(assets.entries(), entryToAssetDetails);
       Iter.toArray(iter);
     };
@@ -149,12 +155,12 @@ module {
     //
     // If content.size() > total_length, caller must call get_chunk() get the rest of the content.
     // All chunks except the last will have the same size as the first chunk.
-    public query func get(
+    public func get(
       arg : {
         key : T.Key;
         accept_encodings : [Text];
       }
-    ) : async ({
+    ) : ({
       content : Blob;
       content_type : Text;
       content_encoding : Text;
@@ -162,10 +168,10 @@ module {
       sha256 : ?Blob;
     }) {
       switch (assets.get(arg.key)) {
-        case null throw Error.reject("asset not found");
+        case null Debug.trap("asset not found");
         case (?asset) {
           switch (asset.chooseEncoding(arg.accept_encodings)) {
-            case null throw Error.reject("no such encoding");
+            case null Debug.trap("no such encoding");
             case (?encoding) {
               {
                 content = encoding.content[0];
@@ -181,27 +187,27 @@ module {
     };
 
     // Get subsequent chunks of an asset encoding's content, after get().
-    public query func get_chunk(
+    public func get_chunk(
       arg : {
         key : T.Key;
         content_encoding : Text;
         index : Nat;
         sha256 : ?Blob;
       }
-    ) : async ({
+    ) : ({
       content : Blob;
     }) {
       switch (assets.get(arg.key)) {
-        case null throw Error.reject("asset not found");
+        case null Debug.trap("asset not found");
         case (?asset) {
           switch (asset.getEncoding(arg.content_encoding)) {
-            case null throw Error.reject("no such encoding");
+            case null Debug.trap("no such encoding");
             case (?encoding) {
               switch (arg.sha256, encoding.sha256) {
                 case (?expected, ?actual) {
-                  if (expected != actual) throw Error.reject("sha256 mismatch");
+                  if (expected != actual) Debug.trap("sha256 mismatch");
                 };
-                case (?expected, null) throw Error.reject("sha256 specified but asset encoding has none");
+                case (?expected, null) Debug.trap("sha256 specified but asset encoding has none");
                 case (null, _) {};
               };
 
@@ -215,10 +221,10 @@ module {
     };
 
     // All chunks are associated with a batch until committed with commit_batch.
-    public shared ({ caller }) func create_batch(arg : {}) : async ({
+    public func create_batch({ caller : Principal; arg : {} }) : ({
       batch_id : T.BatchId;
     }) {
-      if (isSafe(caller) == false) throw Error.reject("not authorized");
+      if (isSafe(caller) == false) Debug.trap("not authorized");
 
       batches.deleteExpired();
       chunks.deleteExpired();
@@ -228,19 +234,22 @@ module {
       };
     };
 
-    public shared ({ caller }) func create_chunk(
-      arg : {
-        batch_id : T.BatchId;
-        content : Blob;
+    public func create_chunk(
+      {
+        caller : Principal;
+        arg : {
+          batch_id : T.BatchId;
+          content : Blob;
+        };
       }
-    ) : async ({
+    ) : ({
       chunk_id : T.ChunkId;
     }) {
       //Debug.print("create_chunk(batch " # Int.toText(arg.batch_id) # ", " # Int.toText(arg.content.size()) # " bytes)");
-      if (isSafe(caller) == false) throw Error.reject("not authorized");
+      if (isSafe(caller) == false) Debug.trap("not authorized");
 
       let chunkId = switch (batches.get(arg.batch_id)) {
-        case null throw Error.reject("batch not found");
+        case null Debug.trap("batch not found");
         case (?batch) chunks.create(batch, arg.content);
       };
 
@@ -249,9 +258,13 @@ module {
       };
     };
 
-    public shared ({ caller }) func commit_batch(args : T.CommitBatchArguments) : async () {
+    public func commit_batch({
+      caller : Principal;
+      args : T.CommitBatchArguments;
+    }) : () {
+
       //Debug.print("commit_batch (" # Int.toText(args.operations.size()) # ")");
-      if (isSafe(caller) == false) throw Error.reject("not authorized");
+      if (isSafe(caller) == false) Debug.trap("not authorized");
 
       for (op in args.operations.vals()) {
         let r : Result.Result<(), Text> = switch (op) {
@@ -263,18 +276,21 @@ module {
         };
         switch (r) {
           case (#ok(())) {};
-          case (#err(msg)) throw Error.reject(msg);
+          case (#err(msg)) Debug.trap(msg);
         };
       };
       batches.delete(args.batch_id);
     };
 
-    public shared ({ caller }) func create_asset(arg : T.CreateAssetArguments) : async () {
-      if (isSafe(caller) == false) throw Error.reject("not authorized");
+    public func create_asset({
+      caller : Principal;
+      arg : T.CreateAssetArguments;
+    }) : () {
+      if (isSafe(caller) == false) Debug.trap("not authorized");
 
       switch (createAsset(arg)) {
         case (#ok(())) {};
-        case (#err(err)) throw Error.reject(err);
+        case (#err(err)) Debug.trap(err);
       };
     };
 
@@ -295,12 +311,15 @@ module {
       #ok(());
     };
 
-    public shared ({ caller }) func set_asset_content(arg : T.SetAssetContentArguments) : async () {
-      if (isSafe(caller) == false) throw Error.reject("not authorized");
+    public func set_asset_content({
+      caller : Principal;
+      arg : T.SetAssetContentArguments;
+    }) : () {
+      if (isSafe(caller) == false) Debug.trap("not authorized");
 
       switch (setAssetContent(arg)) {
         case (#ok(())) {};
-        case (#err(err)) throw Error.reject(err);
+        case (#err(err)) Debug.trap(err);
       };
     };
 
@@ -353,12 +372,15 @@ module {
       };
     };
 
-    public shared ({ caller }) func unset_asset_content(args : T.UnsetAssetContentArguments) : async () {
-      if (isSafe(caller) == false) throw Error.reject("not authorized");
+    public func unset_asset_content({
+      caller : Principal;
+      args : T.UnsetAssetContentArguments;
+    }) : () {
+      if (isSafe(caller) == false) Debug.trap("not authorized");
 
       switch (unsetAssetContent(args)) {
         case (#ok(())) {};
-        case (#err(err)) throw Error.reject(err);
+        case (#err(err)) Debug.trap(err);
       };
     };
 
@@ -373,12 +395,15 @@ module {
       };
     };
 
-    public shared ({ caller }) func delete_asset(args : T.DeleteAssetArguments) : async () {
-      if (isSafe(caller) == false) throw Error.reject("not authorized");
+    public func delete_asset({
+      caller : Principal;
+      args : T.DeleteAssetArguments;
+    }) : () {
+      if (isSafe(caller) == false) Debug.trap("not authorized");
 
       switch (deleteAsset(args)) {
         case (#ok(())) {};
-        case (#err(err)) throw Error.reject(err);
+        case (#err(err)) Debug.trap(err);
       };
     };
 
@@ -391,12 +416,15 @@ module {
       #ok(());
     };
 
-    public shared ({ caller }) func clear(args : T.ClearArguments) : async () {
-      if (isSafe(caller) == false) throw Error.reject("not authorized");
+    public func clear({
+      caller : Principal;
+      args : T.ClearArguments;
+    }) : () {
+      if (isSafe(caller) == false) Debug.trap("not authorized");
 
       switch (doClear(args)) {
         case (#ok(())) {};
-        case (#err(err)) throw Error.reject(err);
+        case (#err(err)) Debug.trap(err);
       };
     };
 
@@ -410,10 +438,10 @@ module {
       #ok(());
     };
 
-    public query func http_request(request : T.HttpRequest) : async T.HttpResponse {
+    public func http_request(request : T.HttpRequest) : T.HttpResponse {
       let key = switch (urlDecode(getKey(request.url))) {
         case (#ok(decoded)) decoded;
-        case (#err(msg)) throw Error.reject("error decoding url: " # msg);
+        case (#err(msg)) Debug.trap("error decoding url: " # msg);
       };
       let acceptEncodings = getAcceptEncodings(request.headers);
 
@@ -494,18 +522,18 @@ module {
 
     // Get subsequent chunks of an asset encoding's content, after http_request().
     // Like get_chunk, but converts url to key
-    public query func http_request_streaming_callback(token : T.StreamingCallbackToken) : async T.StreamingCallbackHttpResponse {
+    public func http_request_streaming_callback(token : T.StreamingCallbackToken) : T.StreamingCallbackHttpResponse {
       switch (assets.get(token.key)) {
-        case null throw Error.reject("asset not found");
+        case null Debug.trap("asset not found");
         case (?asset) {
           switch (asset.getEncoding(token.content_encoding)) {
-            case null throw Error.reject("no such encoding");
+            case null Debug.trap("no such encoding");
             case (?encoding) {
               switch (token.sha256, encoding.sha256) {
                 case (?expected, ?actual) {
-                  if (expected != actual) throw Error.reject("sha256 mismatch");
+                  if (expected != actual) Debug.trap("sha256 mismatch");
                 };
-                case (?expected, null) throw Error.reject("sha256 specified but asset encoding has none");
+                case (?expected, null) Debug.trap("sha256 specified but asset encoding has none");
                 case (null, _) {};
               };
 
