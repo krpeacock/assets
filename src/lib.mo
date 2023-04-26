@@ -29,17 +29,21 @@ module {
   public type Path = T.Path;
   public type Contents = T.Contents;
 
-  public func example() : () {};
+  public type SerializedEntries = ([(T.Key, A.StableAsset)], [Principal]);
 
   public type AssetsInit = {
-    authorized : [Principal];
-    stableAssets : [(T.Key, A.StableAsset)];
-    setAuthorized : [Principal] -> ();
-    setStableAssets : [(T.Key, A.StableAsset)] -> ();
+    serializedEntries : SerializedEntries;
   };
 
   public class Assets(assetsInit : AssetsInit) {
-    let { authorized; stableAssets; setAuthorized; setStableAssets } = assetsInit;
+    let { serializedEntries } = assetsInit;
+    let (stableAssets, initialAuthorized) = serializedEntries;
+
+    var authorized = initialAuthorized;
+
+     func setAuthorized (newAuthorized : [Principal]) : () {
+      authorized := newAuthorized;
+    };
 
     public let assets = HashMap.fromIter<T.Key, A.Asset>(Iter.map(stableAssets.vals(), A.toAssetEntry), 7, Text.equal, Text.hash);
 
@@ -433,7 +437,6 @@ module {
 
       batches.reset();
       chunks.reset();
-      setStableAssets([]);
 
       #ok(());
     };
@@ -630,7 +633,7 @@ module {
       null;
     };
 
-    public func entries() : [(Key, StableAsset)] {
+    public func entries() : SerializedEntries {
       let entries : Iter.Iter<(Key, Asset)> = assets.entries();
 
       let stableEntries : Iter.Iter<(Key, StableAsset)> = Iter.map<(Key, Asset), (Key, StableAsset)>(
@@ -642,7 +645,7 @@ module {
         },
       );
 
-      Iter.toArray<(Key, StableAsset)>(stableEntries);
+      (Iter.toArray<(Key, StableAsset)>(stableEntries), authorized);
 
     };
   };

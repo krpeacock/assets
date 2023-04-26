@@ -14,7 +14,8 @@ const { AssetManager } = require("@dfinity/assets");
 const Ids = require("../../.dfx/local/canister_ids.json");
 
 const HOST = `http://localhost:4943`;
-const canisterId = Ids["test"]["local"];
+// const canisterId = Ids["test"]["local"];
+const canisterId = "tqtu6-byaaa-aaaaa-aaana-cai"
 
 const encoder = new TextEncoder();
 

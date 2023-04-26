@@ -9,23 +9,13 @@ import Array "mo:base/Array";
 import Debug "mo:base/Debug";
 
 shared ({ caller = creator }) actor class () {
-  stable var authorized : [Principal] = [creator];
-  stable var stableAssets : [(Assets.Key, Assets.StableAsset)] = [];
+  stable var entries : Assets.SerializedEntries = ([], [creator]);
   let assets = Assets.Assets({
-    authorized;
-    stableAssets;
-    setAuthorized = func(p : [Principal]) { authorized := p };
-    setStableAssets = func(a : [(Assets.Key, Assets.StableAsset)]) {
-      stableAssets := a;
-    };
+    serializedEntries = entries;
   });
 
   system func preupgrade() {
-    stableAssets := assets.entries();
-  };
-
-  system func postupgrade() {
-    stableAssets := [];
+    entries := assets.entries();
   };
 
   public shared ({ caller }) func authorize(other : Principal) : async () {
