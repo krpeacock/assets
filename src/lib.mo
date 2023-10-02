@@ -55,7 +55,7 @@ module {
       other : Principal;
     }) : () {
       if (isSafe(caller)) {
-        setAuthorized(Array.append<Principal>(authorized, [other]));
+        setAuthorized(joinArrays<Principal>(authorized, [other]));
       } else {
         Debug.trap("not authorized");
       };
@@ -479,7 +479,7 @@ module {
 
           {
             status_code = 200;
-            headers = headers.toArray();
+            headers = Buffer.toArray(headers);
             body = assetEncoding.content[0];
             streaming_strategy = streaming_strategy;
           };
@@ -504,7 +504,7 @@ module {
       // last choice
       accepted_encodings.add("identity");
 
-      accepted_encodings.toArray();
+      Buffer.toArray(accepted_encodings);
     };
 
     // todo: use this once Text.compareWith uses its cmp parameter https://github.com/dfinity/sdk/issues/1599
@@ -647,6 +647,15 @@ module {
 
       (Iter.toArray<(Key, StableAsset)>(stableEntries), authorized);
 
+    };
+
+    private func joinArrays<T>(a : [T], b : [T]) : [T] {
+      let buf = Buffer.fromArray<T>(a);
+      let vals = b.vals();
+      for (val in vals) {
+        buf.add(val);
+      };
+      Buffer.toArray(buf);
     };
   };
 };
