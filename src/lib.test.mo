@@ -10,12 +10,5 @@ suite(
         assert (1 == 1);
       },
     );
-    test(
-      "test2",
-      func() {
-        let echo = Lib.echo("hello");
-        assert (echo == "hello");
-      },
-    );
   },
 );

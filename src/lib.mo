@@ -2,12 +2,9 @@ import Array "mo:base/Array";
 import Buffer "mo:base/Buffer";
 import Char "mo:base/Char";
 import Debug "mo:base/Debug";
-import Error "mo:base/Error";
 import HashMap "mo:base/HashMap";
-import Int "mo:base/Int";
 import Iter "mo:base/Iter";
 import Nat "mo:base/Nat";
-import Nat8 "mo:base/Nat8";
 import Result "mo:base/Result";
 import Text "mo:base/Text";
 import Time "mo:base/Time";
@@ -135,7 +132,7 @@ module {
       };
     };
 
-    func entryToAssetEncodingDetails((name : Text, assetEncoding : A.AssetEncoding)) : T.AssetEncodingDetails {
+    func entryToAssetEncodingDetails((_ : Text, assetEncoding : A.AssetEncoding)) : T.AssetEncodingDetails {
       {
         modified = Time.now();
         content_encoding = assetEncoding.contentEncoding;
